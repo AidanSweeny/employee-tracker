@@ -14,17 +14,19 @@ var connection = mysql.createConnection({
   password: "password",
   database: "employeeTrackDB"
 });
-
 connection.connect(function(err) {
-  if (err) throw err;
-  console.log("connected as id " + connection.threadId + "\n");
-  inquirer
-    .prompt([{
-        type: "list",
-        name: "first",
-        message: "What would you like to do?",
-        choices: ["Add department", "Add role", "Add employee", "View departments", "View roles", "View employees", "Update employee roles"]
-    }]).then(function({first}){
+    if (err) throw err;
+    start();
+});
+
+async function start(){
+    inquirer
+        .prompt([{
+            type: "list",
+            name: "first",
+            message: "What would you like to do?",
+            choices: ["Add department", "Add role", "Add employee", "View departments", "View roles", "View employees", "Update employee roles"]
+        }]).then(await function({first}){
         if(first === "Add department"){
             addDep();
         }
@@ -46,12 +48,11 @@ connection.connect(function(err) {
         else if(first === "Update employee roles"){
             updateRole();
         }
-
     })
-});
+}
 
-function addDep() {
-    inquirer
+async function addDep() {
+    await inquirer
         .prompt([{
             type: "input",
             name: "name",
@@ -65,6 +66,7 @@ function addDep() {
                 function(err, res) {
                     if(err) return err;
                     console.log(res.affectedRows + " department inserted!\n");
+                    start();
                 }
               );
         })
@@ -80,7 +82,7 @@ async function addRole() {
         }
         fullDepartments = res;
     });
-    var prompts = await inquirer
+    inquirer
         .prompt([{
             type: "input",
             name: "newTitle",
@@ -90,27 +92,105 @@ async function addRole() {
             name: "newSalary",
             message: "What is the salary associated with this role?"
         },{
-            type: "list",
+            type: "rawlist",
             name: "id",
             message: "What department is this role associated with?",
             choices: departments
-        }])
+        }]).then(function({newTitle,  newSalary, id}){
         var corDep;
         for(var i=0; i<fullDepartments.length; i++){
-            if(prompts.id === fullDepartments[i].name){
+            if(id === fullDepartments[i].name){
                 corDep = fullDepartments[i].id;
             }
         }
         connection.query(
             "INSERT INTO role SET ?",
             {
-                title: prompts.newTitle,
-                salary: prompts.newSalary,
+                title: newTitle,
+                salary: newSalary,
                 department_id: corDep
             },
             function(err, res) {
                 if(err) throw err;
                 console.log(res.affectedRows + " Role inserted!\n");
+                start();
             }
         );
+        })
+}
+
+async function addEmployee() {
+    var roles = [];
+    var employees = [];
+    var fullEmployee;
+    var fullRoles;
+    await connection.query("SELECT * FROM role", function(err, res) {
+        if (err) throw err;
+        for(var i=0; i<res.length; i++){
+            if(res[i].title){
+                roles.push(res[i].title);
+            }
+        }
+        fullRoles = res;
+    });
+
+    await connection.query("SELECT * FROM employee", function(err, res) {
+        if (err) throw err;
+        for(var i=0; i<res.length; i++){
+            employees.push(res[i].first_name + " " + res[i].last_name);
+        }
+        fullEmployee = res;
+    });
+    
+    inquirer
+        .prompt([{
+            type: "input",
+            name: "firstName",
+            message: "What is first name of this employee?"
+        },{
+            type: "input",
+            name: "lastName",
+            message: "What is the last name of this employee?"
+        },{
+            type: "rawlist",
+            name: "role_id",
+            message: "What role does this employee have?",
+            choices: roles
+        },{
+            type: "rawlist",
+            name: "manager_id",
+            message: "Who is the manager of this employee?",
+            choices: employees
+        }]).then(function({firstName, lastName, role_id, manager_id}){
+        var corRol;
+        for(var i=0; i<fullRoles.length; i++){
+            if(role_id === fullRoles[i].name){
+                corRol = fullRoles[i].id;
+            }
+        }
+        var corEmp;
+        for(var i=0; i<fullEmployee.length; i++){
+            if(manager_id === fullEmployee[i].name){
+                corEmp = fullEmployee[i].id;
+                if(fullEmployee[i].name === "None"){
+                    corEmp = null;
+                }
+            }
+        }
+        connection.query(
+            "INSERT INTO employee SET ?",
+            {
+                first_name: firstName,
+                last_name: lastName,
+                role_id: corRol,
+                manager_id: corEmp,
+
+            },
+            function(err, res) {
+                if(err) throw err;
+                console.log(res.affectedRows + " Role inserted!\n");
+                start();
+            }
+        );
+        })
 }
