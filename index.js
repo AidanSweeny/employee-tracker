@@ -25,7 +25,7 @@ async function start(){
             type: "list",
             name: "first",
             message: "What would you like to do?",
-            choices: ["Add department", "Add role", "Add employee", "View departments", "View roles", "View employees", "Update employee roles"]
+            choices: ["Add department", "Add role", "Add employee", "View departments", "View roles", "View employees", "Update employee roles", "Delete employee", "Delete role", "Delete department"]
         }]).then(await function({first}){
         if(first === "Add department"){
             addDep();
@@ -47,6 +47,15 @@ async function start(){
         }
         else if(first === "Update employee roles"){
             updateRole();
+        }
+        else if(first === "Delete employee"){
+            deleteEmployee();
+        }
+        else if(first === "Delete role"){
+            deleteRole();
+        }
+        else if(first === "Delete department"){
+            deleteDep();
         }
     })
 }
@@ -299,4 +308,124 @@ async function updateRole(){
               );
         })
     });
+}
+
+async function deleteEmployee(){
+    var employees = [];
+    var fullEmployee;
+    await connection.query("SELECT * FROM employee", function(err, res) {
+        if (err) throw err;
+        for(var i=0; i<res.length; i++){
+            employees.push(res[i].first_name + " " + res[i].last_name);
+        }
+        fullEmployee = res;
+
+    inquirer
+        .prompt([{
+            type: "rawlist",
+            name: "name",
+            message: "Who is the employee you would like to delete?",
+            choices: employees
+        }]).then(function({name}){
+            var corEmp;
+            for(var i=0; i<fullEmployee.length; i++){
+                if(name === (fullEmployee[i].first_name + " " + fullEmployee[i].last_name)){
+                    corEmp = fullEmployee[i].id;
+                }
+            }
+            connection.query(
+                "DELETE FROM employee WHERE ?",
+                [
+                  {
+                    id: corEmp
+                  }
+                ],
+                function(err, res) {
+                  console.log(res.affectedRows + " employees updated!\n");
+                    start();
+                }
+              );
+        })
+    });
+
+}
+
+
+async function deleteRole(){
+    var roles = [];
+    var fullRoles;
+    await connection.query("SELECT * FROM role", function(err, res) {
+        if (err) throw err;
+        for(var i=0; i<res.length; i++){
+            roles.push(res[i].title);
+        }
+        fullRoles= res;
+
+    inquirer
+        .prompt([{
+            type: "rawlist",
+            name: "role",
+            message: "What is the role you would like to delete?",
+            choices: roles
+        }]).then(function({role}){
+            var corRole;
+            for(var i=0; i<fullRoles.length; i++){
+                if(role === (fullRoles[i].title)){
+                    corRole = fullRoles[i].id;
+                }
+            }
+            connection.query(
+                "DELETE FROM role WHERE ?",
+                [
+                  {
+                    id: corRole
+                  }
+                ],
+                function(err, res) {
+                  console.log(res.affectedRows + " roles updated!\n");
+                    start();
+                }
+              );
+        })
+    });
+}
+
+async function deleteDep(){
+    var departments = [];
+    var fullDeps;
+    await connection.query("SELECT * FROM department", function(err, res) {
+        if (err) throw err;
+        for(var i=0; i<res.length; i++){
+            departments.push(res[i].name);
+        }
+        fullDeps = res;
+
+    inquirer
+        .prompt([{
+            type: "rawlist",
+            name: "dep",
+            message: "What is the department you would like to delete?",
+            choices: departments
+        }]).then(function({dep}){
+            var corDep;
+            for(var i=0; i<fullDeps.length; i++){
+                if(dep === (fullDeps[i].name)){
+                    corDep = fullDeps[i].id;
+                }
+            }
+            connection.query(
+                "DELETE FROM department WHERE ?",
+                [
+                  {
+                    id: corDep
+                  }
+                ],
+                function(err, res) {
+                  console.log(res.affectedRows + " departments updated!\n");
+                    start();
+                }
+              );
+        })
+    });
+
 }
