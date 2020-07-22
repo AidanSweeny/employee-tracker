@@ -165,13 +165,13 @@ async function addEmployee() {
         }]).then(function({firstName, lastName, role_id, manager_id}){
         var corRol;
         for(var i=0; i<fullRoles.length; i++){
-            if(role_id === fullRoles[i].name){
+            if(role_id === fullRoles[i].title){
                 corRol = fullRoles[i].id;
             }
         }
         var corEmp;
         for(var i=0; i<fullEmployee.length; i++){
-            if(manager_id === fullEmployee[i].name){
+            if(manager_id === (fullEmployee[i].first_name + " " + fullEmployee[i].last_name)){
                 corEmp = fullEmployee[i].id;
                 if(fullEmployee[i].name === "None"){
                     corEmp = null;
@@ -238,38 +238,65 @@ function viewEmployee(){
 }
 
 async function updateRole(){
+    var roles = [];
     var employees = [];
     var fullEmployee;
-    await connection.query("SELECT * FROM employee", function(err, res) {
+    var fullRoles;
+    await connection.query("SELECT * FROM role", function(err, res) {
         if (err) throw err;
         for(var i=0; i<res.length; i++){
             if(res[i].title){
-                employees.push(res[i].first_name + " " + res[i].last_name);
+                roles.push(res[i].title);
             }
         }
-        fullEmployee = res;
+        fullRoles = res;
     });
+    await connection.query("SELECT * FROM employee", function(err, res) {
+        if (err) throw err;
+        for(var i=0; i<res.length; i++){
+            employees.push(res[i].first_name + " " + res[i].last_name);
+        }
+        fullEmployee = res;
+
     inquirer
         .prompt([{
             type: "rawlist",
             name: "name",
-            message: "What employee would you like to update?",
+            message: "Who is the employee you would like to update?",
+            choices: employees
+        },{
+            type: "rawlist",
+            name: "role",
+            message: "What is the new role this employee has?",
             choices: roles
-        }])
-    var query = connection.query(
-        "UPDATE products SET ? WHERE ?",
-        [
-          {
-            quantity: 100
-          },
-          {
-            flavor: "Rocky Road"
-          }
-        ],
-        function(err, res) {
-          console.log(res.affectedRows + " products updated!\n");
-          // Call deleteProduct AFTER the UPDATE completes
-          deleteProduct();
-        }
-      );
+        }]).then(function({name, role}){
+            var corEmp;
+            for(var i=0; i<fullEmployee.length; i++){
+                if(name === (fullEmployee[i].first_name + " " + fullEmployee[i].last_name)){
+                    corEmp = fullEmployee[i].id;
+                }
+            }
+            var corRol;
+            for(var i=0; i<fullRoles.length; i++){
+                if(role === fullRoles[i].title){
+                    corRol = fullRoles[i].id;
+                }
+            }
+            connection.query(
+                "UPDATE employee SET ? WHERE ?",
+                [
+                  {
+                    id: corEmp
+                  },
+                  {
+                    role_id: corRol
+                  }
+                ],
+                function(err, res) {
+                  console.log(res.affectedRows + " employees updated!\n");
+                    start();
+                }
+              );
+        })
+    });
 }
