@@ -72,16 +72,9 @@ async function addDep() {
         })
 }
 
-async function addRole() {
-    var departments = [];
-    var fullDepartments;
-    await connection.query("SELECT * FROM department", function(err, res) {
+function addRole() {
+    connection.query("SELECT * FROM department", function(err, res) {
         if (err) throw err;
-        for(var i=0; i<res.length; i++){
-            departments.push(res[i].name);
-        }
-        fullDepartments = res;
-    });
     inquirer
         .prompt([{
             type: "input",
@@ -92,31 +85,39 @@ async function addRole() {
             name: "newSalary",
             message: "What is the salary associated with this role?"
         },{
-            type: "rawlist",
             name: "id",
-            message: "What department is this role associated with?",
-            choices: departments
-        }]).then(function({newTitle,  newSalary, id}){
-        var corDep;
-        for(var i=0; i<fullDepartments.length; i++){
-            if(id === fullDepartments[i].name){
-                corDep = fullDepartments[i].id;
-            }
-        }
-        connection.query(
-            "INSERT INTO role SET ?",
-            {
-                title: newTitle,
-                salary: newSalary,
-                department_id: corDep
+            type: "rawlist",
+            choices: function() {
+                var dep = [];
+                for( var i=0; i<res.length; i ++){
+                    dep.push(res[i].name)
+                }
+                return dep;
             },
-            function(err, res) {
-                if(err) throw err;
-                console.log(res.affectedRows + " Role inserted!\n");
-                start();
+            message: "What department is this role associated with?"
+        }]).then(function({newTitle,  newSalary, id}){
+            console.log("done");
+            var corDep;
+            for(var i=0; i<res.length; i++){
+                if(id === res[i].name){
+                    corDep = res[i].id;
+                }
             }
-        );
+            connection.query(
+                "INSERT INTO role SET ?",
+                {
+                    title: newTitle,
+                    salary: newSalary,
+                    department_id: corDep
+                },
+                function(err, res) {
+                    if(err) throw err;
+                    console.log(res.affectedRows + " Role inserted!\n");
+                    start();
+                }
+            );
         })
+    });
 }
 
 async function addEmployee() {
@@ -193,4 +194,82 @@ async function addEmployee() {
             }
         );
         })
+}
+
+function viewRoles(){
+    connection.query("SELECT * FROM role", function(err, res) {
+        if (err) throw err;
+        for(var i=0; i<res.length; i++){
+            console.log("ID: " + res[i].id + "\n")
+            console.log("Title: " + res[i].title + "\n")
+            console.log("Salary: " + res[i].salary + "\n")
+            console.log("Department ID: " + res[i].department_id + "\n")
+            console.log("--------------")
+        }
+        start();
+    })
+}
+
+function viewDep(){
+    connection.query("SELECT * FROM department", function(err, res) {
+        if (err) throw err;
+        for(var i=0; i<res.length; i++){
+            console.log("ID: " + res[i].id + "\n")
+            console.log("Name: " + res[i].name + "\n")
+            console.log("--------------")
+        }
+        start();
+    })
+}
+
+function viewEmployee(){
+    connection.query("SELECT * FROM employee", function(err, res) {
+        if (err) throw err;
+        for(var i=0; i<res.length; i++){
+            console.log("ID: " + res[i].id + "\n")
+            console.log("Firstname: " + res[i].first_name + "\n")
+            console.log("Lastname: " + res[i].last_name + "\n")
+            console.log("Role ID: " + res[i].role_id + "\n")
+            console.log("Manager ID: " + res[i].manager_id + "\n")
+            console.log("--------------")
+        }
+        start();
+    })
+}
+
+async function updateRole(){
+    var employees = [];
+    var fullEmployee;
+    await connection.query("SELECT * FROM employee", function(err, res) {
+        if (err) throw err;
+        for(var i=0; i<res.length; i++){
+            if(res[i].title){
+                employees.push(res[i].first_name + " " + res[i].last_name);
+            }
+        }
+        fullEmployee = res;
+    });
+    inquirer
+        .prompt([{
+            type: "rawlist",
+            name: "name",
+            message: "What employee would you like to update?",
+            choices: roles
+        }])
+    var query = connection.query(
+        "UPDATE products SET ? WHERE ?",
+        [
+          {
+            quantity: 100
+          },
+          {
+            flavor: "Rocky Road"
+          }
+        ],
+        function(err, res) {
+          console.log(res.affectedRows + " products updated!\n");
+          // Call deleteProduct AFTER the UPDATE completes
+          deleteProduct();
+        }
+      );
 }
