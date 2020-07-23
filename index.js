@@ -278,7 +278,9 @@ async function updateRole(){
     await connection.query("SELECT * FROM employee", function(err, res) {
         if (err) throw err;
         for(var i=0; i<res.length; i++){
-            employees.push(res[i].first_name + " " + res[i].last_name);
+            if(res[i].first_name !== "None"){
+                employees.push(res[i].first_name + " " + res[i].last_name);
+            }
         }
         fullEmployee = res;
 
@@ -310,13 +312,14 @@ async function updateRole(){
                 "UPDATE employee SET ? WHERE ?",
                 [
                   {
-                    id: corEmp
+                    role_id: corRol
                   },
                   {
-                    role_id: corRol
+                    id: corEmp
                   }
                 ],
                 function(err, res) {
+                    if(err) throw err;
                   console.log(res.affectedRows + " employees updated!\n");
                     start();
                 }
