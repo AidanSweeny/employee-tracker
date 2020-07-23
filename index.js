@@ -92,7 +92,19 @@ function addRole() {
         },{
             type: "input",
             name: "newSalary",
-            message: "What is the salary associated with this role?"
+            message: "What is the salary associated with this role?",
+            validate: function (input) {
+                // Declare function as asynchronous, and save the done callback
+                var done = this.async();
+                // Do async stuff
+                  if ( isNaN(input)) {
+                    // Pass the return value in the done callback
+                    done('You need to provide a number');
+                    return;
+                  }
+                  // Pass the return value in the done callback
+                  done(null, true);
+              }
         },{
             name: "id",
             type: "rawlist",
@@ -182,7 +194,7 @@ async function addEmployee() {
         for(var i=0; i<fullEmployee.length; i++){
             if(manager_id === (fullEmployee[i].first_name + " " + fullEmployee[i].last_name)){
                 corEmp = fullEmployee[i].id;
-                if(fullEmployee[i].name === "None"){
+                if(fullEmployee[i].first_name === "None"){
                     corEmp = null;
                 }
             }
@@ -234,14 +246,17 @@ function viewDep(){
 function viewEmployee(){
     connection.query("SELECT * FROM employee", function(err, res) {
         if (err) throw err;
-        for(var i=0; i<res.length; i++){
-            console.log("ID: " + res[i].id + "\n")
-            console.log("Firstname: " + res[i].first_name + "\n")
-            console.log("Lastname: " + res[i].last_name + "\n")
-            console.log("Role ID: " + res[i].role_id + "\n")
-            console.log("Manager ID: " + res[i].manager_id + "\n")
-            console.log("--------------")
-        }
+            for(var i=0; i<res.length; i++){
+                if(res[i].first_name !== "None"){
+                    console.log("ID: " + res[i].id + "\n")
+                    console.log("Firstname: " + res[i].first_name + "\n")
+                    console.log("Lastname: " + res[i].last_name + "\n")
+                    console.log("Role ID: " + res[i].role_id + "\n")
+                    console.log("Manager ID: " + res[i].manager_id + "\n")
+                    console.log("--------------")
+                }
+            }
+        
         start();
     })
 }
@@ -316,7 +331,9 @@ async function deleteEmployee(){
     await connection.query("SELECT * FROM employee", function(err, res) {
         if (err) throw err;
         for(var i=0; i<res.length; i++){
-            employees.push(res[i].first_name + " " + res[i].last_name);
+            if(res[i].first_name !== "None"){
+                employees.push(res[i].first_name + " " + res[i].last_name);
+            }
         }
         fullEmployee = res;
 
